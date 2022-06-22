@@ -115,7 +115,7 @@ class PostViewsTests(TestCase):
             follow=True
         )
         self.assertEqual(user1.follower.count(), follower_count)
-        
+
         self.authorized_client.force_login(self.user)
         response = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertEqual(len(response.context['page_obj']), 0)
