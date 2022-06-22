@@ -109,7 +109,13 @@ class PostViewsTests(TestCase):
             reverse('posts:profile', args=(self.user.username,))
         )
         self.assertEqual(user1.follower.count(), follower_count + 1)
-
+        follower_count = models.Follow.objects.all().count()
+        response = self.authorized_client.get(
+            reverse('posts:profile_follow', args=(self.user.username,)),
+            follow=True
+        )
+        self.assertEqual(user1.follower.count(), follower_count)
+        
         self.authorized_client.force_login(self.user)
         response = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertEqual(len(response.context['page_obj']), 0)
