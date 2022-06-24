@@ -32,7 +32,6 @@ class Post(CreatedModel):
     text = models.TextField(
         'Текст поста',
         default='--None--',
-        help_text='Введите текст создаваемого поста',
     )
     author = models.ForeignKey(
         User,
@@ -45,13 +44,11 @@ class Post(CreatedModel):
         on_delete=models.SET_NULL,
         related_name='posts',
         verbose_name='Группа',
-        help_text='Укажите группу, в которой будет опубликован пост',
     )
     image = models.ImageField(
         'Картинка',
         upload_to='posts/',
         blank=True,
-        help_text='Прикрепите картинку к посту',
     )
 
     class Meta:
@@ -82,7 +79,6 @@ class Comment(CreatedModel):
     )
     text = models.TextField(
         'Текст комментария',
-        help_text='Введите текст комментария',
     )
 
     class Meta:
@@ -104,3 +100,7 @@ class Follow(models.Model):
         related_name='following',
         verbose_name='Подписка',
     )
+
+    class Meta:
+        verbose_name = "Подписки"
+        verbose_name_plural = "Подписки"

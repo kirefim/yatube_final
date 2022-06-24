@@ -73,33 +73,19 @@ class PostViewsTests(TestCase):
         response = self.client.get(reverse('posts:index'))
         self.correct_context(response)
 
-    def test_index_cached(self):
-        """В шаблоне index список записей кешируется"""
-        post = models.Post.objects.create(
-            text='cached_text',
-            author=self.user,
-        )
-        response = self.client.get(reverse('posts:index'))
-        self.assertEqual(len(response.context['page_obj']), 2)
-        post.delete()
-        response_2 = self.client.get(reverse('posts:index'))
-        with self.subTest():
-            self.assertEqual(response_2.content, response.content)
-            self.assertEqual(len(response_2.context['page_obj']), 1)
-
     def test_follow_show_correct_context(self):
         """Шаблон follow сформированы с верным контекстом"""
-        user1 = models.User.objects.create_user(username='tester')
-        self.authorized_client.force_login(user1)
-        models.Follow.objects.create(user=user1, author=self.user)
+        folower = models.User.objects.create_user(username='tester')
+        self.authorized_client.force_login(folower)
+        models.Follow.objects.create(user=folower, author=self.user)
         response = self.authorized_client.get(reverse('posts:follow_index'))
         self.correct_context(response)
 
     def test_following(self):
         """Проверка правильной работы модуля подписок"""
-        follower_count = models.Follow.objects.all().count()
-        user1 = models.User.objects.create_user(username='tester')
-        self.authorized_client.force_login(user1)
+        folower_count = models.Follow.objects.all().count()
+        folower = models.User.objects.create_user(username='tester')
+        self.authorized_client.force_login(folower)
         response = self.authorized_client.get(
             reverse('posts:profile_follow', args=(self.user.username,)),
             follow=True
@@ -108,19 +94,19 @@ class PostViewsTests(TestCase):
             response,
             reverse('posts:profile', args=(self.user.username,))
         )
-        self.assertEqual(user1.follower.count(), follower_count + 1)
-        follower_count = models.Follow.objects.all().count()
+        self.assertEqual(folower.follower.count(), folower_count + 1)
+        folower_count = models.Follow.objects.all().count()
         response = self.authorized_client.get(
             reverse('posts:profile_follow', args=(self.user.username,)),
             follow=True
         )
-        self.assertEqual(user1.follower.count(), follower_count)
+        self.assertEqual(folower.follower.count(), folower_count)
 
         self.authorized_client.force_login(self.user)
         response = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertEqual(len(response.context['page_obj']), 0)
 
-        self.authorized_client.force_login(user1)
+        self.authorized_client.force_login(folower)
         response = self.authorized_client.get(
             reverse('posts:profile_unfollow', args=(self.user.username,)),
             follow=True
@@ -129,7 +115,7 @@ class PostViewsTests(TestCase):
             response,
             reverse('posts:profile', args=(self.user.username,))
         )
-        self.assertEqual(user1.following.count(), 0)
+        self.assertEqual(folower.following.count(), 0)
 
     def test_group_show_correct_context(self):
         """Шаблон group сформированы с верным контекстом"""
@@ -234,15 +220,21 @@ class PaginatorViewsTest(TestCase):
             )
 
     def setUp(self):
+        cache.clear()
         self.page_names = (
             ('posts:index', ()),
             ('posts:group_list', (self.group.slug,)),
             ('posts:profile', (self.user.username,)),
+            ('posts:follow_index', None),
         )
         self.pages = (
             ('?page=1', settings.SLICE),
             ('?page=2', COUNT_POST - settings.SLICE)
         )
+        self.folower = models.User.objects.create_user(username='tester')
+        models.Follow.objects.create(user=self.folower, author=self.user)
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.folower)
 
     def test_page_contains_right_records(self):
         """Проверка паджинатора: посты разбиваются по страницам"""
@@ -250,7 +242,53 @@ class PaginatorViewsTest(TestCase):
             with self.subTest(page_name=name):
                 for page, posts_amt in self.pages:
                     with self.subTest(page_num=page):
-                        response = self.client.get(
+                        response = self.authorized_client.get(
                             reverse(name, args=args) + page)
                         self.assertEqual(
                             len(response.context['page_obj']), posts_amt)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class CachingViewsTests(TestCase):
+    def tearDown(self):
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        cache.clear()
+        self.user = models.User.objects.create_user(username='auth')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
+    def test_index_cached(self):
+        """В шаблоне index список записей кешируется"""
+        post_count = models.Post.objects.count()
+        post = models.Post.objects.create(
+            text='cached_text',
+            author=self.user,
+        )
+        response = self.client.get(reverse('posts:index'))
+        self.assertEqual(len(response.context['page_obj']), post_count + 1)
+        post.delete()
+        response_2 = self.client.get(reverse('posts:index'))
+        with self.subTest():
+            self.assertEqual(response_2.content, response.content)
+            self.assertEqual(len(response_2.context['page_obj']), post_count)
+
+    def test_follow_index_cached(self):
+        """В шаблоне follow_index список записей кешируется"""
+        post_count = models.Post.objects.count()
+        post = models.Post.objects.create(
+            text='cached_text',
+            author=self.user,
+        )
+        folower = models.User.objects.create_user(username='tester')
+        models.Follow.objects.create(user=folower, author=self.user)
+        self.authorized_client.force_login(folower)
+
+        response = self.authorized_client.get(reverse('posts:follow_index'))
+        self.assertEqual(len(response.context['page_obj']), post_count + 1)
+        post.delete()
+        response_2 = self.authorized_client.get(reverse('posts:follow_index'))
+        with self.subTest():
+            self.assertEqual(response_2.content, response.content)
+            self.assertEqual(len(response_2.context['page_obj']), post_count)

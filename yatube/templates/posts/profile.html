@@ -10,6 +10,19 @@
       Все посты пользователя <u>{{ author.username }}</u>
     </h1>
     <h3>Всего постов: {{ author.posts.count }} </h3>
+    <hr>
+      <div class="row align-items-center">
+        <div class="col-auto">
+          <i>
+            подписки: <span style="color:blue">{{ author.follower.count }}</span>
+          </i>
+        </div>
+        <div class="col-auto">
+          <i>
+          подписчики: <span style="color:blue">{{ author.following.count }}</span>
+          </i>
+        </div>
+      </div>
     {% if user.is_authenticated %}
       {% if following %}
         <a
