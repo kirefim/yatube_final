@@ -42,7 +42,7 @@ def profile(request, username):
 def post_detail(request, post_id):
     post = get_object_or_404(
         Post.objects.select_related('author')
-        .prefetch_related('author__comments__author'),
+        .prefetch_related('comments__author'),
         pk=post_id
     )
     context = {
@@ -106,8 +106,7 @@ def follow_index(request):
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if request.user != author:
-        if not author.following.filter(user=request.user):
-            Follow.objects.get_or_create(user=request.user, author=author)
+        Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('posts:profile', username)
 
 

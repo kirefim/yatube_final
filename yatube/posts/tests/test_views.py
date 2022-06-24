@@ -82,7 +82,7 @@ class PostViewsTests(TestCase):
         self.correct_context(response)
 
     def test_following(self):
-        """Проверка правильной работы модуля подписок"""
+        """Проверка корректной работы подписок"""
         folower_count = models.Follow.objects.all().count()
         folower = models.User.objects.create_user(username='tester')
         self.authorized_client.force_login(folower)
@@ -95,17 +95,11 @@ class PostViewsTests(TestCase):
             reverse('posts:profile', args=(self.user.username,))
         )
         self.assertEqual(folower.follower.count(), folower_count + 1)
-        folower_count = models.Follow.objects.all().count()
-        response = self.authorized_client.get(
-            reverse('posts:profile_follow', args=(self.user.username,)),
-            follow=True
-        )
-        self.assertEqual(folower.follower.count(), folower_count)
 
-        self.authorized_client.force_login(self.user)
-        response = self.authorized_client.get(reverse('posts:follow_index'))
-        self.assertEqual(len(response.context['page_obj']), 0)
-
+    def test_unfollowing(self):
+        """Проверка корректной работы отписок"""
+        folower = models.User.objects.create_user(username='tester')
+        models.Follow.objects.create(user=folower, author=self.user)
         self.authorized_client.force_login(folower)
         response = self.authorized_client.get(
             reverse('posts:profile_unfollow', args=(self.user.username,)),
@@ -261,22 +255,20 @@ class CachingViewsTests(TestCase):
 
     def test_index_cached(self):
         """В шаблоне index список записей кешируется"""
-        post_count = models.Post.objects.count()
         post = models.Post.objects.create(
             text='cached_text',
             author=self.user,
         )
-        response = self.client.get(reverse('posts:index'))
-        self.assertEqual(len(response.context['page_obj']), post_count + 1)
+        response1 = self.client.get(reverse('posts:index'))
         post.delete()
-        response_2 = self.client.get(reverse('posts:index'))
-        with self.subTest():
-            self.assertEqual(response_2.content, response.content)
-            self.assertEqual(len(response_2.context['page_obj']), post_count)
+        response2 = self.client.get(reverse('posts:index'))
+        self.assertEqual(response2.content, response1.content)
+        cache.clear()
+        response3 = self.client.get(reverse('posts:index'))
+        self.assertNotEqual(response3.content, response1.content)
 
     def test_follow_index_cached(self):
         """В шаблоне follow_index список записей кешируется"""
-        post_count = models.Post.objects.count()
         post = models.Post.objects.create(
             text='cached_text',
             author=self.user,
@@ -285,10 +277,10 @@ class CachingViewsTests(TestCase):
         models.Follow.objects.create(user=folower, author=self.user)
         self.authorized_client.force_login(folower)
 
-        response = self.authorized_client.get(reverse('posts:follow_index'))
-        self.assertEqual(len(response.context['page_obj']), post_count + 1)
+        response1 = self.authorized_client.get(reverse('posts:follow_index'))
         post.delete()
-        response_2 = self.authorized_client.get(reverse('posts:follow_index'))
-        with self.subTest():
-            self.assertEqual(response_2.content, response.content)
-            self.assertEqual(len(response_2.context['page_obj']), post_count)
+        response2 = self.authorized_client.get(reverse('posts:follow_index'))
+        self.assertEqual(response2.content, response1.content)
+        cache.clear()
+        response3 = self.authorized_client.get(reverse('posts:follow_index'))
+        self.assertNotEqual(response3.content, response1.content)

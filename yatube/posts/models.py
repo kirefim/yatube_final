@@ -2,8 +2,6 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
 
-from core.models import CreatedModel
-
 
 User = get_user_model()
 
@@ -28,7 +26,7 @@ class Group(models.Model):
         return self.title[:self._meta.get_field('title').max_length]
 
 
-class Post(CreatedModel):
+class Post(models.Model):
     text = models.TextField(
         'Текст поста',
         default='--None--',
@@ -50,6 +48,10 @@ class Post(CreatedModel):
         upload_to='posts/',
         blank=True,
     )
+    pub_date = models.DateTimeField(
+        'Дата создания',
+        auto_now_add=True
+    )
 
     class Meta:
         ordering = ('-pub_date',)
@@ -64,7 +66,7 @@ class Post(CreatedModel):
         return reverse('posts:post_detail', args=(self.pk,))
 
 
-class Comment(CreatedModel):
+class Comment(models.Model):
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -80,9 +82,13 @@ class Comment(CreatedModel):
     text = models.TextField(
         'Текст комментария',
     )
+    created = models.DateTimeField(
+        'Дата коммента',
+        auto_now_add=True
+    )
 
     class Meta:
-        ordering = ('-pub_date',)
+        ordering = ('-created',)
         verbose_name = "Коммент"
         verbose_name_plural = "Комменты"
 

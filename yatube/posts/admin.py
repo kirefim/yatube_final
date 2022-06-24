@@ -20,9 +20,9 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ('pub_date', 'post', 'author', 'text',)
+    list_display = ('created', 'post', 'author', 'text',)
     search_fields = ('post', 'text', 'author')
-    list_filter = ('pub_date',)
+    list_filter = ('created',)
 
 
 @admin.register(Follow)
