@@ -1,3 +1,16 @@
-# hw05_final
-
-[![CI](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml)
+# Yatube соцсеть для блогеров
+### Описание
+Социальная сеть для публикации личных дневников. Создайте свою страницу,
+переходите на страницы других пользователей, подписывайтесь на них, комментируйте их записи.
+### Запуск проекта в dev-режиме
+- Установите и активируйте виртуальное окружение
+- Установите зависимости из файла requirements.txt
+    ```
+    pip install -r requirements.txt
+    ``` 
+- В папке с файлом manage.py выполните команду:
+    ```
+    python3 manage.py runserver
+    ```
+### Авторы
+Кирилл Ефимкин
